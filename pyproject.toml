@@ -28,3 +28,8 @@ ftm-translate = "ftm_translate.cli:cli"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "bump2version (>=1.0.1,<2.0.0)"
+]
