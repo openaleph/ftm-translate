@@ -5267,4 +5267,4 @@ argos = ["argostranslate"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "8909fedd6eb65a8fba774658a81898bb152f69478a374c9b2631ddde8c123905"
+content-hash = "e49042ce49b7bd4cb4ab807032ae19ea06732f7129481c9fadb5cc9594b6cd24"

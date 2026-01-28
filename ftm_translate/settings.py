@@ -24,5 +24,5 @@ class Settings(BaseSettings):
     engine: Engine = Field(default="argos")
     """Translation engine to use (needs to be installed): argos / apertium"""
 
-    target_language: str = Field(default="eng")
+    target_language: str = Field(default="en")
     """Globally configure target language"""
