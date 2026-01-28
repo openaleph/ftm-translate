@@ -52,6 +52,23 @@ Run the worker:
 Queue name: `translate`
 Task identifier: `ftm_translate.tasks.translate`
 
+## Benchmark
+
+Comparison of Argos and Apertium on German → English translation (10 random Wikipedia articles, 3 rounds):
+
+| Mode | Engine | Throughput | Speed |
+|------|--------|------------|-------|
+| Full text (~11k chars) | Argos | 1,081 chars/sec | 1x |
+| Full text (~11k chars) | Apertium | 8,736 chars/sec | **8.1x** |
+| Sentences (75 sentences) | Argos | 895 chars/sec | 1x |
+| Sentences (75 sentences) | Apertium | 1,145 chars/sec | 1.3x |
+
+Apertium is significantly faster for full-text translation. The gap narrows for sentence-by-sentence translation due to subprocess overhead.
+
+Run benchmark:
+
+    python contrib/benchmark.py -n 10 -r 3
+
 ## Acknowledgements
 
 This is inspired by the preliminary work by and valuable knowledge exchange with the [International Consortium of Investigative Journalists](http://icij.org/) whose tech team built [ES Translator](https://icij.github.io/es-translator/).

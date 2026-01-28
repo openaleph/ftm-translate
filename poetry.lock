@@ -2355,6 +2355,33 @@ extra = ["lxml (>=4.6)", "pydot (>=3.0.1)", "pygraphviz (>=1.14)", "sympy (>=1.1
 test = ["pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
+name = "nltk"
+version = "3.9.2"
+description = "Natural Language Toolkit"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"benchmark\""
+files = [
+    {file = "nltk-3.9.2-py3-none-any.whl", hash = "sha256:1e209d2b3009110635ed9709a67a1a3e33a10f799490fa71cf4bec218c11c88a"},
+    {file = "nltk-3.9.2.tar.gz", hash = "sha256:0f409e9b069ca4177c1903c3e843eef90c7e92992fa4931ae607da6de49e1419"},
+]
+
+[package.dependencies]
+click = "*"
+joblib = "*"
+regex = ">=2021.8.3"
+tqdm = "*"
+
+[package.extras]
+all = ["matplotlib", "numpy", "pyparsing", "python-crfsuite", "requests", "scikit-learn", "scipy", "twython"]
+corenlp = ["requests"]
+machine-learning = ["numpy", "python-crfsuite", "scikit-learn", "scipy"]
+plot = ["matplotlib"]
+tgrep = ["pyparsing"]
+twitter = ["twython"]
+
+[[package]]
 name = "nomenklatura"
 version = "4.6.0"
 description = "Make record linkages in followthemoney data."
@@ -5271,9 +5298,10 @@ propcache = ">=0.2.1"
 
 [extras]
 argos = ["argostranslate"]
+benchmark = ["nltk"]
 openaleph = ["openaleph-procrastinate"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "29ea55f72b89c8d7c16c45ab29f184040940ef9fc7b8aa4e6efa4bff57c8f742"
+content-hash = "add40c5d1e3cadb58f47c0366a78eea0a3140a16371b7cb3b7c0db68309c2fe2"
