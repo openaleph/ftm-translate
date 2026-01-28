@@ -1,13 +1,13 @@
 import logging
 
+from openaleph_procrastinate import defer
 from openaleph_procrastinate.app import make_app
 from openaleph_procrastinate.model import DatasetJob
 from openaleph_procrastinate.tasks import task
-from openaleph_procrastinate import defer
 
+from ftm_translate.exceptions import ProcessingException
 from ftm_translate.logic.base import translate_entity
 from ftm_translate.settings import Settings
-from ftm_translate.exceptions import ProcessingException
 
 settings = Settings()
 
@@ -23,7 +23,12 @@ def translate(job: DatasetJob) -> None:
     with job.get_writer() as bulk:
         for entity in job.get_entities():
             try:
-                translated_entity = translate_entity(entity, dehydrate=True)
+                source_lang = (
+                    entity.first("detectedLanguage") or settings.source_language
+                )
+                if source_lang is None:
+                    raise ProcessingException("No source language detected.")
+                translated_entity = translate_entity(entity, source_lang)
                 if translated_entity is not None:
                     bulk.put(translate_entity)
                     defer.analyze(app, job.dataset, [entity], **job.context)

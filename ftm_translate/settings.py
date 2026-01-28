@@ -3,7 +3,6 @@ from typing import Literal, TypeAlias
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 Engine: TypeAlias = Literal["argos", "apertium"]
 
 
@@ -23,6 +22,9 @@ class Settings(BaseSettings):
 
     engine: Engine = Field(default="argos")
     """Translation engine to use (needs to be installed): argos / apertium"""
+
+    source_language: str | None = Field(default=None)
+    """Globally configure source language (None for auto-detect if supported)"""
 
     target_language: str = Field(default="en")
     """Globally configure target language"""

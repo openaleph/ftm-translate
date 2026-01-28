@@ -1,7 +1,8 @@
-from typing import TypeAlias, Generator, Iterable
+from typing import Iterable
 
 from anystore.logging import get_logger
 from followthemoney import E
+from ftmq.types import Entities
 
 from ftm_translate.exceptions import ProcessingException
 from ftm_translate.settings import Engine, Settings
@@ -11,67 +12,65 @@ log = get_logger(__name__)
 
 settings = Settings()
 
-TranslationResult: TypeAlias = tuple[str, str]  # text, lang
-
 
 def translate(
     text: str,
-    language: str | None = settings.target_language,
-    source_language: str | None = None,
-    engine: Engine | None = settings.engine,
-) -> TranslationResult | None:
-    from ftm_translate.logic.apertium import translate_apertium
-    from ftm_translate.logic.argos import translate_argos
+    source_lang: str,
+    target_lang: str = settings.target_language,
+    engine: Engine = settings.engine,
+) -> str | None:
 
-    language = language or settings.target_language
     engine = engine or settings.engine
 
     if engine == "argos":
-        return translate_argos(text, language, source_language)
+        from ftm_translate.logic.argos import translate_argos
+
+        return translate_argos(text, source_lang, target_lang)
     if engine == "apertium":
-        return translate_apertium(text, language, source_language)
+        from ftm_translate.logic.apertium import translate_apertium
+
+        return translate_apertium(text, source_lang, target_lang)
     raise ProcessingException(f"Unsupported engine: `{engine}`")
 
 
 def translate_entity(
     entity: E,
-    language: str | None = settings.target_language,
-    source_language: str | None = None,
-    engine: Engine | None = settings.engine,
-    dehydrate: bool | None = False,
-) -> E | None:
+    source_lang: str,
+    target_lang: str = settings.target_language,
+    engine: Engine = settings.engine,
+    dehydrate: bool = False,
+) -> E:
     _translated = False
+    _should_translate = False
     for text in entity.get("bodyText"):
-        res = translate(text, language=language, source_language=source_language, engine=engine)
+        _should_translate = True
+        res = translate(text, source_lang, target_lang, engine)
         if res is not None:
             translated, lang = res
             entity.add("translatedText", translated)
             entity.add("translatedLanguage", lang)
             _translated = True
-    if _translated:
-        if dehydrate:
-            entity = dehydrate_entity(entity)
-        return entity
-    return None
+    if dehydrate:
+        entity = dehydrate_entity(entity)
+    if not _translated and _should_translate:
+        log.warn(
+            "Couldn't translate entity!",
+            entity=entity.id,
+            source_lang=source_lang,
+            target_lang=target_lang,
+        )
+    return entity
 
 
 def translate_entities(
     entities: Iterable[E],
-    language: str | None = settings.target_language,
-    source_language: str | None = None,
-    engine: Engine | None = settings.engine,
-    dehydrate: bool | None = False,
-) -> Generator[E, None, None]:
+    source_lang: str,
+    target_lang: str = settings.target_language,
+    engine: Engine = settings.engine,
+    dehydrate: bool = False,
+) -> Entities:
     for entity in entities:
         try:
-            result = translate_entity(
-                entity,
-                language=language,
-                source_language=source_language,
-                engine=engine,
-                dehydrate=dehydrate,
-            )
-            if result is not None:
-                yield result
+            yield translate_entity(entity, source_lang, target_lang, engine, dehydrate)
         except ProcessingException as e:
             log.error(f"Translation failed for `{entity.id}`: {e}")
