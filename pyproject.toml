@@ -1,6 +1,6 @@
 [project]
 name = "ftm-translate"
-version = "0.0.0"
+version = "0.0.1"
 description = "Translate FollowTheMoney Document entities via Apertium or Argos"
 authors = [
     { name = "DARC", email = "hi@dataresearchcenter.org" },
