@@ -98,7 +98,7 @@ def translate_argos(
     text: str, source_lang: str, target_lang: str = settings.target_language
 ) -> str | None:
     """Factory function for Argos translation."""
-    translator = ArgosTranslator(source_lang, target_lang)
+    translator = make_translator(source_lang, target_lang)
 
     try:
         return translator.translate(text)

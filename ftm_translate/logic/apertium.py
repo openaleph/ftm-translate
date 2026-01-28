@@ -88,11 +88,17 @@ class ApertiumTranslator(Translator):
             raise ApertiumNotInstalledError()
 
 
+@cache
+def make_translator(source_lang: str, target_lang: str) -> ApertiumTranslator:
+    """Get cached translator instance."""
+    return ApertiumTranslator(source_lang, target_lang)
+
+
 def translate_apertium(
     text: str, source_lang: str, target_lang: str = settings.target_language
 ) -> str | None:
     """Factory function for Apertium translation."""
-    translator = ApertiumTranslator(source_lang, target_lang)
+    translator = make_translator(source_lang, target_lang)
 
     try:
         return translator.translate(text)
