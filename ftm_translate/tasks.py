@@ -31,6 +31,6 @@ def translate(job: DatasetJob) -> None:
                 translated_entity = translate_entity(entity, source_lang)
                 if translated_entity is not None:
                     bulk.put(translate_entity)
-                    defer.analyze(app, job.dataset, [entity], **job.context)
+                    defer.index(app, job.dataset, [entity], **job.context)
             except ProcessingException as e:
                 log.error(f"Transcription failed: {e}")
