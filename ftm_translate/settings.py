@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """
-    `ftm-transcribe` settings management using
+    `ftm-translate` settings management using
     [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 
     Note:

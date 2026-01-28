@@ -1,10 +1,14 @@
 [project]
-name = "ftm-transcribe"
+name = "ftm-translate"
 version = "0.0.1"
-description = ""
-authors = [{ name = "Alex Ștefănescu", email = "alex.stefanescu@pm.me" }]
+description = "Translate FollowTheMoney Document entities via Apertium or Argos"
+authors = [
+    { name = "DARC", email = "hi@dataresearchcenter.org" },
+    { name = "Simon Wörpel", email = "simon@dataresearchcenter.org" },
+    { name = "Alex Ștefănescu", email = "alex.stefanescu@pm.me" },
+]
 license = "AGPLv3+"
-requires-python = ">=3.11,<4"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "anystore (>=0.4.0,<0.5.0)",
     "pydantic (>=2.11.4,<3.0.0)",

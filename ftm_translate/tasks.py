@@ -10,19 +10,19 @@ from openaleph_procrastinate.tasks import task
 from openaleph_procrastinate import defer
 from followthemoney.proxy import EntityProxy
 
-from ftm_transcribe.settings import Settings
-from ftm_transcribe.exceptions import ProcessingException
+from ftm_translate.settings import Settings
+from ftm_translate.exceptions import ProcessingException
 
 settings = Settings()
 
 log = logging.getLogger(__name__)
 app = make_app(__loader__.name)
 
-ORIGIN = "ftm-transcribe"
+ORIGIN = "ftm-translate"
 
 
-@task(app=app, retry=defer.tasks.transcribe.max_retries)
-def transcribe(job: DatasetJob) -> None:
+@task(app=app, retry=defer.tasks.translate.max_retries)
+def translate(job: DatasetJob) -> None:
     for entity_file_reference in job.get_file_references():
         entity: EntityProxy = entity_file_reference.entity
         audio_only_path = None
@@ -102,7 +102,7 @@ def get_transcription_text(file_path: Path, entity: EntityProxy) -> str:
         "-of",
         output_path,
         "-l",
-        # "auto" sometimes transcribes audio in an unintended language
+        # "auto" sometimes translates audio in an unintended language
         settings.whisper_language,
     ]
 
