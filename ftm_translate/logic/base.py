@@ -46,9 +46,8 @@ def translate_entity(
         _should_translate = True
         res = translate(text, source_lang, target_lang, engine)
         if res is not None:
-            translated, lang = res
-            entity.add("translatedText", translated)
-            entity.add("translatedLanguage", lang)
+            entity.add("translatedText", res)
+            entity.add("translatedLanguage", target_lang)
             _translated = True
     if dehydrate:
         entity = dehydrate_entity(entity)

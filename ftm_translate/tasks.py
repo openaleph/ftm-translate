@@ -1,5 +1,6 @@
 import logging
 
+from followthemoney.proxy import EntityProxy
 from openaleph_procrastinate import defer
 from openaleph_procrastinate.app import make_app
 from openaleph_procrastinate.model import DatasetJob
@@ -20,6 +21,7 @@ TEXT = "bodyText"
 
 @task(app=app, retry=defer.tasks.translate.max_retries)
 def translate(job: DatasetJob) -> None:
+    to_defer: list[EntityProxy] = []
     with job.get_writer() as bulk:
         for entity in job.get_entities():
             try:
@@ -31,6 +33,8 @@ def translate(job: DatasetJob) -> None:
                 translated_entity = translate_entity(entity, source_lang)
                 if translated_entity is not None:
                     bulk.put(translate_entity)
-                    defer.index(app, job.dataset, [entity], **job.context)
+                    to_defer.append(translated_entity)
             except ProcessingException as e:
                 log.error(f"Transcription failed: {e}")
+    if to_defer:
+        defer.index(app, job.dataset, to_defer, **job.context)
