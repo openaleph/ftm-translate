@@ -1,16 +1,23 @@
-from typing import Iterable
+from typing import Generator, Iterable
 
 from anystore.logging import get_logger
-from followthemoney import E
+from followthemoney import E, EntityProxy
 from ftmq.types import Entities
 
 from ftm_translate.exceptions import ProcessingException
 from ftm_translate.settings import Engine, Settings
-from ftm_translate.util import dehydrate_entity
 
 log = get_logger(__name__)
 
 settings = Settings()
+
+
+def extract_text(e: EntityProxy) -> Generator[str, None, None]:
+    if e.schema.is_a("Pages"):
+        # we stored in indexText
+        yield from e.get("indexText")
+    else:
+        yield from e.get("bodyText")
 
 
 def translate(
@@ -38,19 +45,16 @@ def translate_entity(
     source_lang: str,
     target_lang: str = settings.target_language,
     engine: Engine = settings.engine,
-    dehydrate: bool = False,
 ) -> E:
     _translated = False
     _should_translate = False
-    for text in entity.get("bodyText"):
+    for text in extract_text(entity):
         _should_translate = True
         res = translate(text, source_lang, target_lang, engine)
         if res is not None:
             entity.add("translatedText", res)
             entity.add("translatedLanguage", target_lang)
             _translated = True
-    if dehydrate:
-        entity = dehydrate_entity(entity)
     if not _translated and _should_translate:
         log.warn(
             "Couldn't translate entity!",
@@ -66,10 +70,9 @@ def translate_entities(
     source_lang: str,
     target_lang: str = settings.target_language,
     engine: Engine = settings.engine,
-    dehydrate: bool = False,
 ) -> Entities:
     for entity in entities:
         try:
-            yield translate_entity(entity, source_lang, target_lang, engine, dehydrate)
+            yield translate_entity(entity, source_lang, target_lang, engine)
         except ProcessingException as e:
             log.error(f"Translation failed for `{entity.id}`: {e}")

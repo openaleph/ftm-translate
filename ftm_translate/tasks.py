@@ -23,7 +23,7 @@ TEXT = "bodyText"
 def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
     with job.get_writer() as bulk:
-        for entity in job.get_entities():
+        for entity in job.load_entities():
             try:
                 source_lang = (
                     entity.first("detectedLanguage") or settings.source_language
@@ -32,7 +32,7 @@ def translate(job: DatasetJob) -> None:
                     raise ProcessingException("No source language detected.")
                 translated_entity = translate_entity(entity, source_lang)
                 if translated_entity is not None:
-                    bulk.put(translate_entity)
+                    bulk.put(translated_entity)
                     to_defer.append(translated_entity)
             except ProcessingException as e:
                 log.error(f"Transcription failed: {e}")
