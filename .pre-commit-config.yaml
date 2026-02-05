@@ -77,7 +77,7 @@ repos:
     rev: 1.10.0
     hooks:
       - id: poetry-export
-        args: ["--without-hashes", "-o", "requirements.txt"]
+        args: ["--without-hashes", "--extras", "openaleph", "-o", "requirements.txt"]
       - id: poetry-export
         args:
           ["--without-hashes", "--only", "dev", "-o", "requirements-dev.txt"]
