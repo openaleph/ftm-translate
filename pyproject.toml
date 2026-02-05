@@ -18,8 +18,13 @@ dependencies = [
     "followthemoney (>=4.5.2,<5.0.0)",
 ]
 
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
 [project.optional-dependencies]
-argos = ["argostranslate (>=1.10.0,<2.0.0)"]
+argos = ["argostranslate (>=1.10.0,<2.0.0)", "torch (>=2.0.0)"]
 openaleph = ["openaleph-procrastinate (>=5.2.0,<6.0.0)"]
 benchmark = ["nltk (>=3.9.2,<4.0.0)"]
 
@@ -29,6 +34,9 @@ ftm-translate = "ftm_translate.cli:cli"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+torch = {source = "pytorch-cpu"}
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"
