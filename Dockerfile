@@ -111,7 +111,11 @@ ENV PROCRASTINATE_APP="ftm_translate.tasks.app"
 # =============================================================================
 FROM app-base AS argos
 
+# Install CPU-only torch first (saves ~6GB vs full CUDA torch),
+# then argostranslate (which depends on stanza -> torch)
 RUN python -m ensurepip 2>/dev/null || true \
+    && python -m pip install --no-compile \
+        torch --index-url https://download.pytorch.org/whl/cpu \
     && python -m pip install --no-compile "argostranslate>=1.10.0,<2.0.0" \
     && python -m pip uninstall -y pip setuptools 2>/dev/null || true \
     && find /usr/local/lib/python*/site-packages -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true \
