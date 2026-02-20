@@ -1,10 +1,10 @@
 from typing import Literal, TypeAlias
 
-from pydantic import Field
+from pydantic import Field, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from openaleph_procrastinate.settings import OpenAlephSettings
 
 Engine: TypeAlias = Literal["argos", "apertium"]
-
 
 class Settings(BaseSettings):
     """
