@@ -80,7 +80,7 @@ def translate(job: DatasetJob) -> None:
                         try:
                             ingest_page_entities.append(EntityProxy.from_dict(entity_dict))
                         except Exception as e:
-                            log.error(f"Failed to retrieve Page entity: {entity_dict["id"]}")
+                            log.error(f"Failed to retrieve Page entity: {entity_dict['id']}")
                             continue
                     
                     # there are no Page entities with origin = ingest
