@@ -31,9 +31,10 @@ sqlalchemy_pool = {
 ORIGIN = "ftm-translate"
 # FTMQ BulkLoader default size = 1000
 QUERY_LIMIT = 1000
+ORIGIN = "translate"
 
-# manager.emit_text_fragment(entity, page_model.text, page_entity.id)
-def emit_entity_fragment(parent: EntityProxy, texts: list[str], child: EntityProxy, ns: Namespace, bulk: BulkLoader):
+
+def emit_entity_fragment(parent: EntityProxy, texts: list[str], child: EntityProxy, ns: Namespace, bulk: BulkLoader) -> EntityProxy:
     texts = [t for t in ensure_list(texts) if filter_text(t)]
     if len(texts):
         entity_fragment = model.make_entity(parent.schema)
@@ -41,16 +42,12 @@ def emit_entity_fragment(parent: EntityProxy, texts: list[str], child: EntityPro
         entity_fragment.add("indexText", texts)
         ns.apply(entity_fragment)
         bulk.put(entity_fragment, fragment=safe_fragment(child.id))
-        # TODO figure out what this is and how to implement it
-        # source: ingest-file ingestors/manager.py lines 142-143
-        # with self.emitted.writer() as bulk:
-            # bulk.add_entity(make_checksum_entity(entity, StatementEntity, quiet=True))
-
+        return entity_fragment
 
 @task(app=app, retry=defer.tasks.translate.max_retries)
 def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
-    with job.get_writer() as bulk:
+    with job.get_writer(origin=ORIGIN) as bulk:
         for entity in job.load_entities():
             # abort early if source language isn't set
             source_lang = (entity.first("detectedLanguage") or settings.source_language)
@@ -66,53 +63,61 @@ def translate(job: DatasetJob) -> None:
                     dataset = job.payload["context"]["ftmstore"]
                     ns = Namespace(job.context["namespace"])
                     # create Page entities
-                    translated_entities = [model.make_entity(schema, key_prefix=dataset) for idx in range(current_page, current_page+QUERY_LIMIT)]
+                    translated_entities: list[EntityProxy] = [model.make_entity(schema, key_prefix=dataset) for idx in range(current_page, current_page+QUERY_LIMIT)]
                     #  create Page entity IDs
                     for idx, page_entity in zip(range(current_page, current_page+QUERY_LIMIT), translated_entities):
                         page_entity.make_id(entity.id, idx)
                     # apply namespace to Page entity IDs
-                    translated_entities = [ns.apply(page_entity) for page_entity in translated_entities]
+                    translated_entities: list[EntityProxy] = [ns.apply(page_entity) for page_entity in translated_entities]
                     # get at most QUERY_LIMIT Page entities with origin = "ingest" from the store
                     # these will be the source of the bodyText for translations
                     store = get_fragments(dataset, "ingest", database_uri=openaleph_settings.fragments_uri, **sqlalchemy_pool)
-                    page_entity_ids = [page_entity.id for page_entity in translated_entities]
-                    ingest_page_entities = list(store.fragments(page_entity_ids))
+                    page_entity_ids: list[str] = [page_entity.id for page_entity in translated_entities]
+                    ingest_page_raw: list[dict] = list(store.fragments(page_entity_ids))
+                    ingest_page_entities = []
+
+                    for entity_dict in ingest_page_raw:
+                        try:
+                            ingest_page_entities.append(EntityProxy.from_dict(entity_dict))
+                        except Exception as e:
+                            log.error(f"Failed to retrieve Page entity: {entity_dict["id"]}")
+                            continue
                     
                     # there are no Page entities with origin = ingest
                     if not len(ingest_page_entities):
                         log.error(f"Transcription failed. No ingest fragments found")
 
+                    translated_texts = []
+                    for source_entity, translated_entity in zip(ingest_page_entities, translated_entities):
+                        try:
+                            translated_entity = translate_entity(source_entity, translated_entity, entity.id, source_lang)
+                            if translated_entity is not None:
+                                bulk.put(translated_entity)
+                                translated_texts.append(translated_entity.first("translatedText"))
+                                # emit a Pages fragment with the translatedText copied into indexText
+                                # to allow full text search across the translated text
+                                fragment = emit_entity_fragment(entity, translated_texts, translated_entity, ns, bulk)
+                                # queue both the Page entity and the Pages fragment for indexing
+                                to_defer.append(translated_entity)
+                                to_defer.append(fragment)
+                        except ProcessingException as e:
+                            log.error(f"Transcription failed: {e}")
+                        
                     if len(ingest_page_entities) <= QUERY_LIMIT:
                         accumulate_done = True
-                        translated_texts = []
-                        for source_entity, translated_entity in zip(ingest_page_entities, translated_entities):
-                            try:
-                                translated_entity = translate_entity(source_entity, translated_entity, entity.id, source_lang)
-                                if translated_entity is not None:
-                                    bulk.put(translated_entity)
-                                    translated_texts.append(translated_entity.first("translatedText"))
-                            except ProcessingException as e:
-                                log.error(f"Transcription failed: {e}")
-                            # emit a Pages fragment with the translatedText copied into indexText
-                            # to allow full text search across the translated text
-                            emit_entity_fragment(entity, translated_texts, translated_entity, ns, bulk)    
                     else:
                         current_page += QUERY_LIMIT
                 else:
-                    # TODO handle non-Pages
-                    pass
+                    try:
+                        # the source_entity and translated_entity are the same in the case of
+                        # Documents that aren't Pages entities
+                        translated_entity = translate_entity(entity, entity, entity.id, source_lang)
+                        if translated_entity is not None:
+                            bulk.put(translated_entity)
+                            to_defer.append(translated_entity)
+                    except ProcessingException as e:
+                        log.error(f"Transcription failed: {e}")
             # write any left-over entities to the store
             bulk.flush()
-            
-
-            # try:
-            #     translated_entity = translate_entity(entity, source_lang)
-            #     if translated_entity is not None:
-            #         bulk.put(translated_entity)
-            #         to_defer.append(translated_entity)
-            # except ProcessingException as e:
-            #     log.error(f"Transcription failed: {e}")
-
-    # TODO populate to_defer
     if to_defer:
         defer.index(app, job.dataset, to_defer, **job.context)
