@@ -1,7 +1,7 @@
 import subprocess
+from functools import cache
 from tempfile import NamedTemporaryFile
 
-from anystore.functools import weakref_cache as cache
 from rigour.langs import iso_639_alpha3
 
 from ftm_translate.exceptions import ProcessingException

@@ -7,9 +7,10 @@ for _logger_name in ("argostranslate", "argostranslate.utils", "stanza"):
     _logger.propagate = False
     _logger.addHandler(logging.NullHandler())
 
+from functools import cache  # noqa: E402
+
 import argostranslate.package  # noqa: E402
 import argostranslate.translate  # noqa: E402
-from anystore.functools import weakref_cache as cache  # noqa: E402
 from rigour.langs import iso_639_alpha2  # noqa: E402
 
 from ftm_translate.exceptions import ProcessingException  # noqa: E402
