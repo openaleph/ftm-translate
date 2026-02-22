@@ -2,6 +2,7 @@ from typing import Generator, Iterable
 
 from anystore.logging import get_logger
 from followthemoney import E, EntityProxy
+from followthemoney.exc import InvalidData
 from ftmq.types import Entities
 
 from ftm_translate.exceptions import ProcessingException
@@ -41,28 +42,35 @@ def translate(
 
 
 def translate_entity(
-    entity: E,
+    source_entity: E,
+    translated_entity: E,
+    parent_entity_id: str,
     source_lang: str,
     target_lang: str = settings.target_language,
     engine: Engine = settings.engine,
 ) -> E:
     _translated = False
     _should_translate = False
-    for text in extract_text(entity):
+    for text in extract_text(source_entity):
         _should_translate = True
         res = translate(text, source_lang, target_lang, engine)
         if res is not None:
-            entity.add("translatedText", res)
-            entity.add("translatedLanguage", target_lang)
+            translated_entity.add("translatedText", res)
+            try:
+                # Documents, except Page
+                translated_entity.add("translatedLanguage", target_lang)
+            except InvalidData:
+                # Page
+                translated_entity.add("translatedTextLanguage", target_lang)
             _translated = True
     if not _translated and _should_translate:
         log.warn(
             "Couldn't translate entity!",
-            entity=entity.id,
+            entity=parent_entity_id,
             source_lang=source_lang,
             target_lang=target_lang,
         )
-    return entity
+    return translated_entity
 
 
 def translate_entities(

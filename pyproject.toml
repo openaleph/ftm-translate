@@ -16,6 +16,7 @@ dependencies = [
     "ftmq (>=4.5.3,<5.0.0)",
     "rigour (>=1.6.2,<2.0.0)",
     "followthemoney (>=4.5.2,<5.0.0)",
+    "normality (>=3.0.2,<4.0.0)",
 ]
 
 [[tool.poetry.source]]
