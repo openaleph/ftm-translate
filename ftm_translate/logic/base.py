@@ -1,24 +1,16 @@
-from typing import Generator, Iterable
+from typing import Iterable
 
 from anystore.logging import get_logger
-from followthemoney import E, EntityProxy
-from followthemoney.exc import InvalidData
+from followthemoney import E
 from ftmq.types import Entities
 
 from ftm_translate.exceptions import ProcessingException
 from ftm_translate.settings import Engine, Settings
+from ftm_translate.util import get_lang_prop
 
 log = get_logger(__name__)
 
 settings = Settings()
-
-
-def extract_text(e: EntityProxy) -> Generator[str, None, None]:
-    if e.schema.is_a("Pages"):
-        # we stored in indexText
-        yield from e.get("indexText")
-    else:
-        yield from e.get("bodyText")
 
 
 def translate(
@@ -42,35 +34,29 @@ def translate(
 
 
 def translate_entity(
-    source_entity: E,
-    translated_entity: E,
-    parent_entity_id: str,
+    entity: E,
     source_lang: str,
     target_lang: str = settings.target_language,
     engine: Engine = settings.engine,
 ) -> E:
     _translated = False
     _should_translate = False
-    for text in extract_text(source_entity):
+    lang_prop = get_lang_prop(entity)
+    for text in entity.get("bodyText"):
         _should_translate = True
         res = translate(text, source_lang, target_lang, engine)
         if res is not None:
-            translated_entity.add("translatedText", res)
-            try:
-                # Documents, except Page
-                translated_entity.add("translatedLanguage", target_lang)
-            except InvalidData:
-                # Page
-                translated_entity.add("translatedTextLanguage", target_lang)
+            entity.add("translatedText", res)
+            entity.add(lang_prop, target_lang)
             _translated = True
     if not _translated and _should_translate:
         log.warn(
             "Couldn't translate entity!",
-            entity=parent_entity_id,
+            entity=entity,
             source_lang=source_lang,
             target_lang=target_lang,
         )
-    return translated_entity
+    return entity
 
 
 def translate_entities(
