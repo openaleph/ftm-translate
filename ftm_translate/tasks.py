@@ -87,6 +87,11 @@ def translate(job: DatasetJob) -> None:
                             job.log.error(f"Translation failed: {e}", entity_id=page.id)
 
                     if pages_found:
+                        # signal the indexer that this is translated text:
+                        index_text = (
+                            f"__translation__ {'\n'.join(parent.get("indexText"))}"
+                        )
+                        parent.set("indexText", index_text)
                         # write parent fragment to store
                         bulk.put(parent, fragment=fragment_name)
                         # defer parent entity to index stage
