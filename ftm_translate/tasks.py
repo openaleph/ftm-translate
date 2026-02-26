@@ -28,7 +28,11 @@ QUERY_LIMIT = 1000
 ORIGIN = "translate"
 
 
-@task(app=app, retry=defer.tasks.translate.max_retries)
+@task(
+    app=app,
+    retry=defer.tasks.translate.max_retries,
+    tracer_uri=openaleph_settings.redis_url,
+)
 def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
     dataset = job.payload["context"]["ftmstore"]
