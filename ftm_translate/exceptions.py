@@ -1,4 +1,4 @@
 class ProcessingException(Exception):
-    "A data-related error occuring during file processing."
+    "A data-related error occurring during file processing."
 
     pass
