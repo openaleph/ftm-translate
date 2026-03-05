@@ -54,9 +54,15 @@ jobs:
           - name: argos
             target: argos
             is_default: true
+            build-args: ""
+          - name: argos-offline
+            target: argos-offline
+            is_default: false
+            build-args: ARGOS_LANG_PAIRS=de_en fr_en es_en
           - name: apertium
             target: apertium
             is_default: false
+            build-args: ""
     steps:
       - uses: actions/checkout@v6
 
@@ -100,6 +106,7 @@ jobs:
         with:
           context: .
           target: ${{ matrix.variant.target }}
+          build-args: ${{ matrix.variant.build-args }}
           platforms: linux/amd64
           push: true
           tags: |

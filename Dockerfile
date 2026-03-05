@@ -125,6 +125,36 @@ ENV FTM_TRANSLATE_ENGINE=argos
 ENTRYPOINT []
 
 # =============================================================================
+# Stage: argos-offline
+# Argos Translate with pre-downloaded language packages (no network needed)
+#
+# Build with:
+#   docker build --target argos-offline \
+#     --build-arg ARGOS_LANG_PAIRS="de_en es_en fr_en" \
+#     -t ftm-translate:argos-offline .
+#
+# ARGOS_LANG_PAIRS is a space-separated list of from_to pairs (ISO 639-1).
+# Default: all available packages.
+# =============================================================================
+FROM argos AS argos-offline
+
+ARG ARGOS_LANG_PAIRS=""
+
+RUN python -c "\
+import argostranslate.package; \
+argostranslate.package.update_package_index(); \
+pairs = '${ARGOS_LANG_PAIRS}'.split(); \
+available = argostranslate.package.get_available_packages(); \
+to_install = [p for p in available \
+    if not pairs or f'{p.from_code}_{p.to_code}' in pairs]; \
+print(f'Installing {len(to_install)} language packages ...'); \
+[argostranslate.package.install_from_path(p.download()) for p in to_install]; \
+print('Done')"
+
+ENV FTM_TRANSLATE_ENGINE=argos
+ENTRYPOINT []
+
+# =============================================================================
 # Stage: apertium
 # Apertium translation engine (extend image for specific language pairs)
 # =============================================================================
