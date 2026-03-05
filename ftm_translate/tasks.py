@@ -35,10 +35,10 @@ ORIGIN = "translate"
 )
 def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
-    dataset = job.payload["context"]["ftmstore"]
+    ftm_dataset = job.payload["context"]["ftmstore"]
     ns = Namespace(job.context["namespace"])
     store = get_fragments(
-        dataset,
+        ftm_dataset,
         origin="ingest",
         database_uri=openaleph_settings.fragments_uri,
         **sqlalchemy_pool,
@@ -62,7 +62,7 @@ def translate(job: DatasetJob) -> None:
                     # generate Page entities IDs:
                     page_batch = range(current_page, current_page + QUERY_LIMIT)
                     page_ids = (
-                        make_entity_id(entity.id, p, key_prefix=dataset)
+                        make_entity_id(entity.id, p, key_prefix=ftm_dataset)
                         for p in page_batch
                     )
                     # apply correct namespace
