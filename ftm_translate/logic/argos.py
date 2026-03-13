@@ -1,4 +1,5 @@
 import logging
+import os
 
 # Suppress verbose logging from argostranslate and its dependencies
 for _logger_name in ("argostranslate", "argostranslate.utils", "stanza"):
@@ -12,6 +13,29 @@ from functools import cache  # noqa: E402
 import argostranslate.package  # noqa: E402
 import argostranslate.translate  # noqa: E402
 from rigour.langs import iso_639_alpha2  # noqa: E402
+
+# Patch stanza to skip re-downloading resources.json when it already exists
+# locally. Without this, stanza always tries to fetch the resource index from
+# GitHub, which breaks offline / air-gapped containers.
+try:
+    import stanza.pipeline.core as _stanza_core  # noqa: E402
+
+    _orig_download_resources_json = _stanza_core.download_resources_json
+
+    def _download_resources_json_if_needed(*args, **kwargs):
+        model_dir = (
+            args[0] if args else kwargs.get("model_dir", _stanza_core.DEFAULT_MODEL_DIR)
+        )
+        filepath = kwargs.get("resources_filepath") or os.path.join(
+            model_dir, "resources.json"
+        )
+        if os.path.exists(filepath):
+            return
+        return _orig_download_resources_json(*args, **kwargs)
+
+    _stanza_core.download_resources_json = _download_resources_json_if_needed
+except ImportError:
+    pass
 
 from ftm_translate.exceptions import ProcessingException  # noqa: E402
 from ftm_translate.logic.translator import Translator  # noqa: E402
@@ -33,19 +57,14 @@ class ArgosTranslator(Translator):
 
     def _ensure_pair(self) -> bool:
         """Ensure the language pair is installed, downloading if necessary."""
-        installed_languages = argostranslate.translate.get_installed_languages()
-        source_langs = [
-            lang for lang in installed_languages if lang.code == self.source_alpha2
-        ]
-        target_langs = [
-            lang for lang in installed_languages if lang.code == self.target_alpha2
-        ]
-
-        if source_langs and target_langs:
-            source = source_langs[0]
-            target = target_langs[0]
-            if source.get_translation(target) is not None:
-                return True
+        # Fast filesystem-only check via installed packages (avoids creating
+        # Translation objects which may trigger lazy network calls).
+        installed_packages = argostranslate.package.get_installed_packages()
+        if any(
+            pkg.from_code == self.source_alpha2 and pkg.to_code == self.target_alpha2
+            for pkg in installed_packages
+        ):
+            return True
 
         # Try to download the package
         self.log.info("Downloading argos language pair ...")

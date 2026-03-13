@@ -151,6 +151,27 @@ print(f'Installing {len(to_install)} language packages ...'); \
 [argostranslate.package.install_from_path(p.download()) for p in to_install]; \
 print('Done')"
 
+# Pre-cache stanza resources.json inside each package's stanza/ directory so
+# that stanza.Pipeline() can load it without hitting the network at runtime.
+RUN python -c "\
+import os, urllib.request; \
+import stanza.resources.common as src; \
+url = f'{src.DEFAULT_RESOURCES_URL}/resources_{src.DEFAULT_RESOURCES_VERSION}.json'; \
+import argostranslate.package; \
+pkgs = argostranslate.package.get_installed_packages(); \
+cached = False; \
+for pkg in pkgs: \
+    stanza_dir = str(pkg.package_path / 'stanza'); \
+    if os.path.isdir(stanza_dir): \
+        res_path = os.path.join(stanza_dir, 'resources.json'); \
+        if not os.path.exists(res_path): \
+            if not cached: \
+                urllib.request.urlretrieve(url, '/tmp/stanza_resources.json'); \
+                cached = True; \
+            import shutil; shutil.copy('/tmp/stanza_resources.json', res_path); \
+            print(f'Cached stanza resources.json in {stanza_dir}'); \
+print('Done')"
+
 ENV FTM_TRANSLATE_ENGINE=argos
 ENTRYPOINT []
 
