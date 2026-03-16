@@ -37,6 +37,7 @@ def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
     ftm_dataset = job.payload["context"]["ftmstore"]
     ns = Namespace(job.context["namespace"])
+    ctx_source_language = job.payload["context"].get("source_language", None)
     store = get_fragments(
         ftm_dataset,
         origin="ingest",
@@ -47,7 +48,7 @@ def translate(job: DatasetJob) -> None:
     with job.get_writer(origin=ORIGIN) as bulk:
         for entity in job.load_entities():
             # abort early if source language isn't set
-            source_lang = entity.first("detectedLanguage") or settings.source_language
+            source_lang = ctx_source_language or entity.first("detectedLanguage") or settings.source_language
             if source_lang is None:
                 raise ProcessingException("No source language detected.")
 
