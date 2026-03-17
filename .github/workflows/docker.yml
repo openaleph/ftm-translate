@@ -55,10 +55,6 @@ jobs:
             target: argos
             is_default: true
             build-args: ""
-          - name: argos-offline
-            target: argos-offline
-            is_default: false
-            build-args: ARGOS_LANG_PAIRS=de_en fr_en es_en
           - name: apertium
             target: apertium
             is_default: false
