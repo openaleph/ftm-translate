@@ -62,10 +62,16 @@ def translate(job: DatasetJob) -> None:
                 while True:
                     # generate Page entities IDs:
                     page_batch = range(current_page, current_page + QUERY_LIMIT)
-                    page_ids = (
+                    page_ids = set(
                         make_entity_id(entity.id, p, key_prefix=ftm_dataset)
                         for p in page_batch
                     )
+                    # https://github.com/openaleph/ingest-file/issues/30
+                    page_id_no_ns = set(
+                        make_entity_id(entity.id.split(".")[0], p, key_prefix=ftm_dataset)
+                        for p in page_batch
+                    )
+                    page_ids.update(page_id_no_ns)
                     # apply correct namespace
                     page_ids = list(map(ns.sign, page_ids))
                     # get at most QUERY_LIMIT Page entities with
