@@ -3,6 +3,7 @@ from typing import Iterable
 from anystore.logging import get_logger
 from followthemoney import E
 from ftmq.types import Entities
+from rigour.langs import iso_639_alpha2
 
 from ftm_translate.exceptions import ProcessingException
 from ftm_translate.settings import Engine, Settings
@@ -19,6 +20,16 @@ def translate(
     target_lang: str = settings.target_language,
     engine: Engine = settings.engine,
 ) -> str | None:
+
+    source_lang = iso_639_alpha2(source_lang)
+    target_lang = iso_639_alpha2(target_lang)
+    if source_lang == target_lang:  # should have been caught earlier
+        log.warn(
+            "Source lang is target lang, skipping translation",
+            source_lang=source_lang,
+            target_lang=target_lang,
+        )
+        return
 
     engine = engine or settings.engine
 
