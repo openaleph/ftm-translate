@@ -5,7 +5,7 @@ from followthemoney.proxy import EntityProxy
 from ftm_translate.logic.base import translate, translate_entity
 
 SOURCE_TEXT = "Hallo, ich heiße Jane Doe und wohne in Berlin"
-EXPECTED_TRANSLATION = "Hello, my name is Jane Doe and live in Berlin"
+EXPECTED_TRANSLATION = "Hello, my name is Jane Doe and I live in Berlin"
 
 
 @pytest.fixture
