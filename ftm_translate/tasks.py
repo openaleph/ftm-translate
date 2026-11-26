@@ -35,20 +35,16 @@ ORIGIN = "translate"
 )
 def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
-    ftm_dataset = job.payload["context"]["ftmstore"]
-    ns = Namespace(job.context["namespace"])
     ctx_source_language = job.payload["context"].get("source_language", None)
-    store = get_fragments(
-        ftm_dataset,
-        origin="ingest",
-        database_uri=openaleph_settings.fragments_uri,
-        **sqlalchemy_pool,
-    )
     fragment_name = f"translation_{settings.target_language}"
     with job.get_writer(origin=ORIGIN) as bulk:
         for entity in job.load_entities():
             # abort early if source language isn't set
-            source_lang = ctx_source_language or entity.first("detectedLanguage") or settings.source_language
+            source_lang = (
+                ctx_source_language
+                or entity.first("detectedLanguage")
+                or settings.source_language
+            )
             if source_lang is None:
                 raise ProcessingException("No source language detected.")
 
@@ -57,6 +53,14 @@ def translate(job: DatasetJob) -> None:
                 # them up in the ftm store, we assume their IDs in batches
                 # instead of doing a json lookup for parent property which is
                 # way too expensive.
+                ftm_dataset = job.payload["context"]["ftmstore"]
+                store = get_fragments(
+                    ftm_dataset,
+                    origin="ingest",
+                    database_uri=openaleph_settings.fragments_uri,
+                    **sqlalchemy_pool,
+                )
+                ns = Namespace(job.context["namespace"])
                 current_page = 1
                 parent = EntityProxy.from_dict({"id": entity.id, "schema": "Pages"})
                 while True:
@@ -68,7 +72,9 @@ def translate(job: DatasetJob) -> None:
                     )
                     # https://github.com/openaleph/ingest-file/issues/30
                     page_id_no_ns = set(
-                        make_entity_id(entity.id.split(".")[0], p, key_prefix=ftm_dataset)
+                        make_entity_id(
+                            entity.id.split(".")[0], p, key_prefix=ftm_dataset
+                        )
                         for p in page_batch
                     )
                     page_ids.update(page_id_no_ns)
