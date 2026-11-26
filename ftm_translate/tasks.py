@@ -35,7 +35,7 @@ ORIGIN = "translate"
 )
 def translate(job: DatasetJob) -> None:
     to_defer: list[EntityProxy] = []
-    ctx_source_language = job.payload["context"].get("source_language", None)
+    ctx_source_language = job.payload.get("context", {}).get("source_language", None)
     fragment_name = f"translation_{settings.target_language}"
     with job.get_writer(origin=ORIGIN) as bulk:
         for entity in job.load_entities():
